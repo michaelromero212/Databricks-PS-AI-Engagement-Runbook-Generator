@@ -84,3 +84,27 @@ class DatabricksClient:
         data = response.json().get("data")
         import base64
         return base64.b64decode(data).decode('utf-8')
+
+    def get_run_output(self, run_id: str) -> str:
+        """
+        Get notebook output from a completed job run.
+        This works with Community Edition tokens that lack DBFS access.
+        Returns the value passed to dbutils.notebook.exit() in the notebook.
+        """
+        url = f"{self.host}/api/2.1/jobs/runs/get-output?run_id={run_id}"
+        response = requests.get(url, headers=self.headers)
+        response.raise_for_status()
+        
+        # The notebook output is in the 'notebook_output' field
+        output_data = response.json()
+        
+        # Check if there's a notebook output result
+        if 'notebook_output' in output_data:
+            result = output_data['notebook_output'].get('result', '')
+            return result
+        
+        # Fallback to error if present
+        if 'error' in output_data:
+            raise Exception(f"Job run failed: {output_data.get('error')}")
+            
+        return None

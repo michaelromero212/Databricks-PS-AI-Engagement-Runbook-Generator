@@ -142,6 +142,10 @@ try:
     
     print(f"✅ Runbook successfully written to {file_path}")
     
+    # IMPORTANT: Return the runbook content as notebook output
+    # This allows retrieval via Jobs API even without DBFS access (Community Edition compatible)
+    dbutils.notebook.exit(markdown_output)
+    
 except Exception as e:
     print(f"❌ Error writing runbook: {e}")
-    dbutils.notebook.exit("FAILED: Could not write runbook")
+    dbutils.notebook.exit(f"FAILED: Could not write runbook - {str(e)}")

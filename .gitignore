@@ -24,6 +24,7 @@ dist/
 # Databricks / Project Specific
 backend/dbfs/
 backend/runbooks/
+backend/data_storage/
 *.log
 test_output.log
 end_to_end_test_output.log
