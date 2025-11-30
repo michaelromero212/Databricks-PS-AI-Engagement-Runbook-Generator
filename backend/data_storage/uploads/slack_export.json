@@ -1,0 +1,27 @@
+[
+    {
+        "user": "Mike Ross",
+        "ts": "1710518400.000200",
+        "text": "Hey team, just wanted to flag that we are seeing some permission denied errors when trying to mount the S3 bucket."
+    },
+    {
+        "user": "Sarah Chen",
+        "ts": "1710518500.000300",
+        "text": "Hi Mike, can you check if the instance profile has the 's3:ListBucket' permission? That's a common gotcha."
+    },
+    {
+        "user": "Jessica Pearson",
+        "ts": "1710519000.000400",
+        "text": "Good catch Sarah, we missed that one in the policy. Updating it now."
+    },
+    {
+        "user": "Mike Ross",
+        "ts": "1710520000.000500",
+        "text": "Works now! Thanks. Also, for the bronze layer, should we use Autoloader or just standard read?"
+    },
+    {
+        "user": "Sarah Chen",
+        "ts": "1710520100.000600",
+        "text": "Definitely Autoloader. It will handle the schema evolution and file notification much better for your streaming requirements."
+    }
+]

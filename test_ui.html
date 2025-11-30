@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Databricks PS AI Runbook Generator - Test UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: #0072B2;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #0072B2;
+        }
+
+        .section h2 {
+            color: #0072B2;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .file-input {
+            display: block;
+            margin: 15px 0;
+            padding: 10px;
+            border: 2px dashed #ccc;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .file-input:hover {
+            border-color: #0072B2;
+            background: #f0f7ff;
+        }
+
+        select,
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #0072B2;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #005a8c;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        #runbookOutput {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 6px;
+            min-height: 100px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            border: 1px solid #ddd;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 10px;
+        }
+
+        .badge.running {
+            background: #007bff;
+            color: white;
+        }
+
+        .badge.success {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge.pending {
+            background: #ffc107;
+            color: black;
+        }
+
+        .badge.failed {
+            background: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 PS AI Runbook Generator</h1>
+            <p class="subtitle">Simple Test Interface - Backend Running on Port 8000</p>
+        </header>
+
+        <div class="content">
+            <div class="section">
+                <h2>📤 1. Upload File (Optional)</h2>
+                <input type="file" id="fileInput" class="file-input">
+                <button id="uploadBtn" onclick="uploadFile()">Upload to DBFS</button>
+                <div id="uploadStatus" class="status"></div>
+            </div>
+
+            <div class="section">
+                <h2>🤖 2. Select Model</h2>
+                <select id="modelSelect">
+                    <option value="distilbert-base-uncased">HuggingFace DistilBERT (Fast)</option>
+                    <option value="dbrx-instruct">Databricks DBRX Instruct</option>
+                    <option value="sentence-transformers/all-MiniLM-L6-v2">HuggingFace MiniLM (Instant)</option>
+                </select>
+            </div>
+
+            <div class="section">
+                <h2>▶️ 3. Run Pipeline</h2>
+                <button id="runBtn" onclick="runPipeline()">Trigger Databricks Job</button>
+                <div id="pipelineStatus" class="status"></div>
+                <div id="jobInfo" style="margin-top: 15px; display: none;">
+                    <strong>Run ID:</strong> <span id="runId"></span>
+                    <span id="statusBadge" class="badge"></span>
+                    <br><br>
+                    <button onclick="checkStatus()">🔄 Refresh Status</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>📄 4. Results</h2>
+                <button onclick="fetchRunbook()">📥 Fetch Latest Runbook</button>
+                <div id="runbookStatus" class="status"></div>
+                <div id="runbookOutput"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentRunId = null;
+
+        async function uploadFile() {
+            const file = document.getElementById('fileInput').files[0];
+            if (!file) {
+                showStatus('uploadStatus', 'Please select a file first', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                showStatus('uploadStatus', 'Uploading...', 'info');
+                const response = await fetch('http://localhost:8000/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('uploadStatus', `✓ Uploaded: ${data.filename}`, 'success');
+                } else {
+                    showStatus('uploadStatus', `× Error: ${data.detail}`, 'error');
+                }
+            } catch (error) {
+                showStatus('uploadStatus', `× Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function runPipeline() {
+            const model = document.getElementById('modelSelect').value;
+
+            try {
+                showStatus('pipelineStatus', 'Triggering job...', 'info');
+                const response = await fetch('http://localhost:8000/run/pipeline', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model_type: model,
+                        files: []
+                    })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentRunId = data.run_id;
+                    document.getElementById('runId').textContent = data.run_id;
+                    document.getElementById('statusBadge').textContent = data.status;
+                    document.getElementById('statusBadge').className = 'badge ' + data.status.toLowerCase();
+                    document.getElementById('jobInfo').style.display = 'block';
+                    showStatus('pipelineStatus', '✓ Job triggered successfully!', 'success');
+
+                    // Auto-refresh status
+                    setTimeout(checkStatus, 3000);
+                } else {
+                    showStatus('pipelineStatus', `× Error: ${data.detail}`, 'error');
+                }
+            } catch (error) {
+                showStatus('pipelineStatus', `× Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkStatus() {
+            if (!currentRunId) return;
+
+            try {
+                const response = await fetch(`http://localhost:8000/status/job/${currentRunId}`);
+                const data = await response.json();
+
+                document.getElementById('statusBadge').textContent = data.status;
+                document.getElementById('statusBadge').className = 'badge ' + data.status.toLowerCase();
+
+                if (data.status === 'RUNNING' || data.status === 'PENDING') {
+                    setTimeout(checkStatus, 5000);
+                } else if (data.status === 'SUCCESS') {
+                    showStatus('pipelineStatus', '✓ Job completed! You can now fetch the runbook.', 'success');
+                }
+            } catch (error) {
+                console.error('Status check error:', error);
+            }
+        }
+
+        async function fetchRunbook() {
+            try {
+                showStatus('runbookStatus', 'Fetching runbook...', 'info');
+                const response = await fetch('http://localhost:8000/runbook/latest');
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('runbookOutput').textContent = data.markdown_content;
+                    showStatus('runbookStatus', '✓ Runbook loaded', 'success');
+                } else {
+                    showStatus('runbookStatus', `× ${data.detail}`, 'error');
+                }
+            } catch (error) {
+                showStatus('runbookStatus', `× Error: ${error.message}`, 'error');
+            }
+        }
+
+        function showStatus(id, message, type) {
+            const el = document.getElementById(id);
+            el.textContent = message;
+            el.className = 'status ' + type;
+            el.style.display = 'block';
+        }
+    </script>
+</body>
+
+</html>

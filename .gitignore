@@ -1,0 +1,33 @@
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+
+# macOS
+.DS_Store
+
+# Databricks / Project Specific
+backend/dbfs/
+backend/runbooks/
+*.log
+test_output.log
+end_to_end_test_output.log
+
+# IDEs
+.vscode/
+.idea/

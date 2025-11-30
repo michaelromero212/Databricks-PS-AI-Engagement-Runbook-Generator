@@ -1,0 +1,7 @@
+Issue Key,Summary,Status,Priority,Assignee
+PROJ-101,Setup Databricks Workspace,Done,High,Sarah Chen
+PROJ-102,Configure Unity Catalog Metastore,In Progress,High,Sarah Chen
+PROJ-103,Migrate Customer Table DDL,To Do,Medium,Jessica Pearson
+PROJ-104,Rewrite Java UDFs to Python,To Do,High,Unassigned
+PROJ-105,Implement Bronze Ingestion Pipeline,To Do,High,Jessica Pearson
+PROJ-106,Setup CI/CD for DABs,Blocked,Medium,Mike Ross
