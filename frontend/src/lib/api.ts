@@ -1,10 +1,10 @@
 const API_BASE = 'http://localhost:8000';
 
 export interface FileUploadResponse {
-    filename: str;
-    dbfs_path: str;
+    filename: string;
+    dbfs_path: string;
     size: number;
-    status: str;
+    status: string;
 }
 
 export interface PipelineRunResponse {
@@ -63,6 +63,12 @@ export const api = {
     getLatestRunbook: async (): Promise<RunbookResponse> => {
         const res = await fetch(`${API_BASE}/runbook/latest`);
         if (!res.ok) throw new Error('Get runbook failed');
+        return res.json();
+    },
+
+    loadDemoScenario: async (scenario: string): Promise<any> => {
+        const res = await fetch(`${API_BASE}/demo/load/${scenario}`, { method: 'POST' });
+        if (!res.ok) throw new Error('Demo load failed');
         return res.json();
     }
 };
