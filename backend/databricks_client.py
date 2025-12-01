@@ -17,13 +17,13 @@ class DatabricksClient:
         if params:
             data["notebook_params"] = params
         
-        response = requests.post(url, headers=self.headers, json=data)
+        response = requests.post(url, headers=self.headers, json=data, timeout=10)
         response.raise_for_status()
         return response.json().get("run_id")
 
     def get_run_status(self, run_id: str) -> dict:
         url = f"{self.host}/api/2.1/jobs/runs/get?run_id={run_id}"
-        response = requests.get(url, headers=self.headers)
+        response = requests.get(url, headers=self.headers, timeout=10)
         response.raise_for_status()
         state = response.json().get("state", {})
         
@@ -56,7 +56,7 @@ class DatabricksClient:
         # 1. Create handle
         create_url = f"{self.host}/api/2.0/dbfs/create"
         create_data = {"path": dbfs_path, "overwrite": True}
-        resp = requests.post(create_url, headers=self.headers, json=create_data)
+        resp = requests.post(create_url, headers=self.headers, json=create_data, timeout=10)
         resp.raise_for_status()
         handle = resp.json().get("handle")
         
@@ -69,15 +69,15 @@ class DatabricksClient:
                     break
                 import base64
                 data = base64.b64encode(chunk).decode()
-                requests.post(add_url, headers=self.headers, json={"handle": handle, "data": data})
+                requests.post(add_url, headers=self.headers, json={"handle": handle, "data": data}, timeout=30)
         
         # 3. Close
         close_url = f"{self.host}/api/2.0/dbfs/close"
-        requests.post(close_url, headers=self.headers, json={"handle": handle})
+        requests.post(close_url, headers=self.headers, json={"handle": handle}, timeout=10)
 
     def read_file_from_dbfs(self, dbfs_path: str) -> str:
         url = f"{self.host}/api/2.0/dbfs/read?path={dbfs_path}"
-        response = requests.get(url, headers=self.headers)
+        response = requests.get(url, headers=self.headers, timeout=10)
         if response.status_code == 404:
             return None
         response.raise_for_status()
@@ -92,7 +92,7 @@ class DatabricksClient:
         Returns the value passed to dbutils.notebook.exit() in the notebook.
         """
         url = f"{self.host}/api/2.1/jobs/runs/get-output?run_id={run_id}"
-        response = requests.get(url, headers=self.headers)
+        response = requests.get(url, headers=self.headers, timeout=10)
         response.raise_for_status()
         
         # The notebook output is in the 'notebook_output' field

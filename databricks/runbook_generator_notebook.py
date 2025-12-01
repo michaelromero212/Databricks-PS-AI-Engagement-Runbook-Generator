@@ -18,19 +18,63 @@ import uuid
 
 dbutils.widgets.text("output_path", "/dbfs/tmp/ps_ai_runbook_gen/runbooks")
 dbutils.widgets.text("model_type", "distilbert-base-uncased")
+dbutils.widgets.text("input_data", "") # New widget for direct JSON input
+
 output_path = dbutils.widgets.get("output_path")
 model_type = dbutils.widgets.get("model_type")
+input_data_json = dbutils.widgets.get("input_data")
 
 # COMMAND ----------
 
-# Load Gold Data
-try:
-    df = spark.table("gold_engagement_vectors")
-    docs = df.collect()
-    print(f"Loaded {len(docs)} documents for generation")
-except Exception as e:
-    print(f"Error loading gold table: {e}")
-    dbutils.notebook.exit("FAILED: Could not load gold table")
+import json
+
+# Load Data (Priority: Direct Input > Gold Table)
+docs = []
+
+if input_data_json and input_data_json.strip():
+    print("Using direct input data (Bypassing DBFS/Gold Table)")
+    try:
+        input_files = json.loads(input_data_json)
+        # Convert to expected format for the rest of the notebook
+        for filename, content in input_files.items():
+            # Simple entity extraction simulation for direct input
+            entities = []
+            if "TECH:" in content:
+                # Extract tech from content if simulated
+                pass 
+            
+            # For now, we just pass the raw content. 
+            # In a real app, we'd run the NLP here or expect pre-processed entities.
+            # To make the existing logic work, we'll simulate some entities based on keywords
+            if "hadoop" in content.lower(): entities.append("TECH: Hadoop")
+            if "hive" in content.lower(): entities.append("TECH: Hive")
+            if "spark" in content.lower(): entities.append("TECH: Spark")
+            if "databricks" in content.lower(): entities.append("TECH: Databricks")
+            if "mlflow" in content.lower(): entities.append("TECH: MLflow")
+            if "2024" in content: entities.append("DATE: 2024-01-01") # Mock date
+            
+            docs.append({
+                "path": f"dbfs:/uploads/{filename}", 
+                "content": content,
+                "entities": entities
+            })
+        print(f"Loaded {len(docs)} documents from direct input")
+    except Exception as e:
+        print(f"Error parsing input_data: {e}")
+        dbutils.notebook.exit(f"FAILED: Error parsing input data - {str(e)}")
+
+else:
+    # Fallback to loading Gold Data (Original Logic)
+    try:
+        df = spark.table("gold_engagement_vectors")
+        docs = df.collect()
+        print(f"Loaded {len(docs)} documents from Gold Table")
+    except Exception as e:
+        print(f"Error loading gold table: {e}")
+        # If we are here, it means no input data AND no gold table. 
+        # For Community Edition, this is likely fatal if we expected DBFS to work.
+        # But we can return a helpful error.
+        dbutils.notebook.exit("FAILED: No input data provided and could not load gold table")
 
 # COMMAND ----------
 
@@ -115,37 +159,48 @@ markdown_output += """
 
 # COMMAND ----------
 
-# Write to DBFS
-try:
-    # Get Run ID from context if available, else generate one
-    try:
-        context = dbutils.notebook.entry_point.getDbutils().notebook().getContext()
-        run_id = str(context.jobId().get()) if context.jobId().isDefined() else str(uuid.uuid4())
-    except:
-        run_id = str(uuid.uuid4())
-        
-    print(f"Writing runbook for Run ID: {run_id}")
+# Return output via dbutils.notebook.exit (Works for Community Edition)
+# DBFS write is optional and skipped if using direct input to avoid permission issues
 
-    # Create directory
-    # Handle DBFS path correctly
-    if output_path.startswith("dbfs:"):
-        local_output_path = output_path.replace("dbfs:", "/dbfs")
-    else:
-        local_output_path = output_path
-        
-    final_dir = os.path.join(local_output_path, run_id)
-    os.makedirs(final_dir, exist_ok=True)
-    
-    file_path = os.path.join(final_dir, "runbook.md")
-    with open(file_path, "w") as f:
-        f.write(markdown_output)
-    
-    print(f"✅ Runbook successfully written to {file_path}")
-    
-    # IMPORTANT: Return the runbook content as notebook output
-    # This allows retrieval via Jobs API even without DBFS access (Community Edition compatible)
+if input_data_json and input_data_json.strip():
+    # Direct input mode: Skip DBFS write, only return via notebook.exit
+    print(f"✅ Runbook generated (length: {len(markdown_output)} chars)")
+    print("Returning runbook via notebook.exit (Direct Input Mode - DBFS write skipped)")
     dbutils.notebook.exit(markdown_output)
-    
-except Exception as e:
-    print(f"❌ Error writing runbook: {e}")
-    dbutils.notebook.exit(f"FAILED: Could not write runbook - {str(e)}")
+else:
+    # Gold table mode: Try DBFS write
+    try:
+        # Get Run ID from context if available, else generate one
+        try:
+            context = dbutils.notebook.entry_point.getDbutils().notebook().getContext()
+            run_id = str(context.jobId().get()) if context.jobId().isDefined() else str(uuid.uuid4())
+        except:
+            run_id = str(uuid.uuid4())
+            
+        print(f"Writing runbook for Run ID: {run_id}")
+
+        # Create directory
+        # Handle DBFS path correctly
+        if output_path.startswith("dbfs:"):
+            local_output_path = output_path.replace("dbfs:", "/dbfs")
+        else:
+            local_output_path = output_path
+            
+        final_dir = os.path.join(local_output_path, run_id)
+        os.makedirs(final_dir, exist_ok=True)
+        
+        file_path = os.path.join(final_dir, "runbook.md")
+        with open(file_path, "w") as f:
+            f.write(markdown_output)
+        
+        print(f"✅ Runbook successfully written to {file_path}")
+        
+        # IMPORTANT: Return the runbook content as notebook output
+        # This allows retrieval via Jobs API even without DBFS access (Community Edition compatible)
+        dbutils.notebook.exit(markdown_output)
+        
+    except Exception as e:
+        print(f"❌ Error writing runbook: {e}")
+        # Still return the content even if DBFS write fails
+        dbutils.notebook.exit(markdown_output)
+

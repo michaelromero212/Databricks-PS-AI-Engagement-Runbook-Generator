@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import shutil
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -112,10 +113,24 @@ async def load_demo_data(scenario: str):
 async def run_pipeline(request: PipelineRunRequest):
     # Trigger Databricks Job
     # We pass the model type and input path as parameters
+    # Read local files to pass as input_data
+    input_data = {}
+    uploads_dir = os.path.join(settings.LOCAL_STORAGE_PATH, "uploads")
+    if os.path.exists(uploads_dir):
+        for f in os.listdir(uploads_dir):
+            file_path = os.path.join(uploads_dir, f)
+            if os.path.isfile(file_path):
+                try:
+                    with open(file_path, "r") as file_obj:
+                        input_data[f] = file_obj.read()
+                except Exception as e:
+                    print(f"Error reading {f}: {e}")
+
     params = {
         "model_type": request.model_type.value,
         "input_path": f"{settings.DBFS_ROOT}/uploads",
-        "output_path": f"{settings.DBFS_ROOT}/runbooks"
+        "output_path": f"{settings.DBFS_ROOT}/runbooks",
+        "input_data": json.dumps(input_data) # Pass file content directly
     }
     
     try:
@@ -236,17 +251,17 @@ This is a locally generated summary based on the input files.
 
 ## 2. Processed Files
 """
-        for f in files:
-            fallback_content += f"- 📄 **{f}**\n"
-            
-        fallback_content += """
+    for f in files:
+        fallback_content += f"- 📄 **{f}**\n"
+        
+    fallback_content += """
 ## 3. Next Steps
 - Verify the full runbook in your Databricks Workspace.
 - Check permissions for DBFS access to enable full integration.
 """
-        metadata = {"model_used": "fallback-generator", "generated_at": str(time.time())}
-        storage.save_runbook(run_id, fallback_content, metadata)
-        return {"status": "fetched_fallback"}
+    metadata = {"model_used": "fallback-generator", "generated_at": str(time.time())}
+    storage.save_runbook(run_id, fallback_content, metadata)
+    return {"status": "fetched_fallback"}
 
 if __name__ == "__main__":
     import uvicorn
