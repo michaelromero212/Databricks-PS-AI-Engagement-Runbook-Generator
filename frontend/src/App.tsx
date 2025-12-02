@@ -41,7 +41,7 @@ function App() {
 
             if (res.status === 'SUCCESS' && !runbookContent) {
                 await api.fetchRunbook(runId);
-                const rb = await api.getLatestRunbook();
+                const rb = await api.getRunbook(runId);
                 setRunbookContent(rb.markdown_content);
                 setRunbookMetadata(rb.metadata);
             }

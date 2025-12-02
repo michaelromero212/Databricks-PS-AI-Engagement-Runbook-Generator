@@ -176,6 +176,13 @@ async def get_latest_runbook():
     
     return storage.get_runbook(versions[0])
 
+@app.get("/runbook/{run_id}", response_model=RunbookResponse)
+async def get_runbook(run_id: str):
+    runbook = storage.get_runbook(run_id)
+    if not runbook:
+        raise HTTPException(status_code=404, detail="Runbook not found")
+    return runbook
+
 @app.get("/runbook/versions", response_model=List[str])
 async def get_runbook_versions():
     return storage.list_versions()

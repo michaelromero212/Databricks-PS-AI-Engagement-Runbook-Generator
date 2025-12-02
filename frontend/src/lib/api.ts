@@ -66,6 +66,12 @@ export const api = {
         return res.json();
     },
 
+    getRunbook: async (runId: string): Promise<RunbookResponse> => {
+        const res = await fetch(`${API_BASE}/runbook/${runId}`);
+        if (!res.ok) throw new Error('Get runbook failed');
+        return res.json();
+    },
+
     loadDemoScenario: async (scenario: string): Promise<any> => {
         const res = await fetch(`${API_BASE}/demo/load/${scenario}`, { method: 'POST' });
         if (!res.ok) throw new Error('Demo load failed');
