@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FileText, Database, ArrowRightLeft, Monitor, Upload } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { FileText, Database, ArrowRightLeft, Monitor, Upload, CheckCircle, Loader2 } from 'lucide-react';
 import { ScenarioCard } from './ScenarioCard';
 import { api } from '../lib/api';
 
@@ -11,11 +11,15 @@ export function ScenarioSelector({ onFilesLoaded }: ScenarioSelectorProps) {
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState('');
     const [statusType, setStatusType] = useState<'info' | 'success' | 'error'>('info');
+    const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleScenarioClick = async (scenario: string, scenarioName: string) => {
         setLoading(true);
         setStatus(`Loading ${scenarioName} data...`);
         setStatusType('info');
+        setUploadedFiles([]); // Clear any custom uploads
 
         try {
             const result = await api.loadDemoScenario(scenario);
@@ -28,6 +32,43 @@ export function ScenarioSelector({ onFilesLoaded }: ScenarioSelectorProps) {
             console.error('Demo load error:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleUploadClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        setUploading(true);
+        setStatus('Uploading files...');
+        setStatusType('info');
+        const newFiles: string[] = [];
+
+        try {
+            for (const file of Array.from(files)) {
+                await api.uploadFile(file);
+                newFiles.push(file.name);
+            }
+
+            const allFiles = [...uploadedFiles, ...newFiles];
+            setUploadedFiles(allFiles);
+            setStatus(`Successfully uploaded ${allFiles.length} file${allFiles.length > 1 ? 's' : ''}. Ready to generate.`);
+            setStatusType('success');
+            onFilesLoaded(allFiles);
+        } catch (error) {
+            setStatus('Error uploading files. Please try again.');
+            setStatusType('error');
+            console.error('Upload error:', error);
+        } finally {
+            setUploading(false);
+            // Reset input to allow re-uploading same file
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
         }
     };
 
@@ -88,21 +129,55 @@ export function ScenarioSelector({ onFilesLoaded }: ScenarioSelectorProps) {
                     onClick={() => handleScenarioClick('mlops', 'MLOps Design')}
                 />
 
-                {/* Upload Custom Files Card */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-center cursor-pointer hover:border-gray-400 dark:hover:border-gray-500 transition-colors">
-                    <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Upload Custom Files</span>
-                    <input type="file" className="hidden" />
+                {/* Upload Custom Files Card - Now Functional */}
+                <div
+                    onClick={handleUploadClick}
+                    className={`bg-white dark:bg-gray-800 p-6 rounded-xl border-2 border-dashed 
+                        ${uploadedFiles.length > 0
+                            ? 'border-green-400 dark:border-green-600'
+                            : 'border-gray-300 dark:border-gray-600'} 
+                        flex flex-col items-center justify-center text-center cursor-pointer 
+                        hover:border-gray-400 dark:hover:border-gray-500 transition-colors min-h-[160px]`}
+                >
+                    {uploading ? (
+                        <>
+                            <Loader2 className="w-8 h-8 text-blue-500 mb-2 animate-spin" />
+                            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Uploading...</span>
+                        </>
+                    ) : uploadedFiles.length > 0 ? (
+                        <>
+                            <CheckCircle className="w-8 h-8 text-green-500 mb-2" />
+                            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                                {uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''} uploaded
+                            </span>
+                            <span className="text-xs text-gray-400 mt-1">Click to add more</span>
+                        </>
+                    ) : (
+                        <>
+                            <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Upload Custom Files</span>
+                            <span className="text-xs text-gray-400 mt-1">.md, .txt, .json, .csv</span>
+                        </>
+                    )}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        className="hidden"
+                        onChange={handleFileChange}
+                        multiple
+                        accept=".md,.txt,.json,.csv,.docx"
+                    />
                 </div>
             </div>
 
             {/* Status Message */}
             {status && (
                 <div className={`mt-4 text-sm font-medium ${statusColors[statusType]} h-6`}>
-                    {loading && <span className="inline-block animate-pulse">⏳ </span>}
+                    {(loading || uploading) && <span className="inline-block animate-pulse">⏳ </span>}
                     {status}
                 </div>
             )}
         </section>
     );
 }
+

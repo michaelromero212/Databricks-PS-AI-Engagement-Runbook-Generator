@@ -6,6 +6,7 @@ import { StatusBar } from './components/StatusBar';
 import { RunbookViewer } from './components/RunbookViewer';
 import { api } from './lib/api';
 import { MODELS } from './lib/constants';
+import { AlertCircle, X } from 'lucide-react';
 
 function App() {
     const [selectedModel, setSelectedModel] = useState(MODELS[0].id);
@@ -15,20 +16,25 @@ function App() {
     const [runbookContent, setRunbookContent] = useState<string>('');
     const [runbookMetadata, setRunbookMetadata] = useState<any>(null);
     const [lastUpdated, setLastUpdated] = useState<string>('');
+    const [error, setError] = useState<string | null>(null);
 
     const handleFilesLoaded = (files: string[]) => {
         setUploadedFiles(files);
+        setError(null); // Clear any previous errors
     };
+
+    const dismissError = () => setError(null);
 
     const handleRunPipeline = async () => {
         try {
+            setError(null);
             const res = await api.runPipeline(selectedModel, uploadedFiles);
             setRunId(res.run_id);
             setJobStatus(res.status);
             setLastUpdated(new Date().toLocaleTimeString());
         } catch (e) {
             console.error(e);
-            alert('Failed to start pipeline');
+            setError('Failed to start pipeline. Please check your Databricks connection and try again.');
         }
     };
 
@@ -122,6 +128,29 @@ function App() {
 
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto p-8 space-y-8">
+                    {/* Error Banner */}
+                    {error && (
+                        <div
+                            role="alert"
+                            className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded-r-lg flex items-start justify-between"
+                        >
+                            <div className="flex items-start space-x-3">
+                                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <h3 className="text-sm font-medium text-red-800 dark:text-red-200">Error</h3>
+                                    <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={dismissError}
+                                className="text-red-500 hover:text-red-700 dark:hover:text-red-300 p-1"
+                                aria-label="Dismiss error"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    )}
+
                     {/* Scenario Selector */}
                     {!runbookContent && (
                         <ScenarioSelector onFilesLoaded={handleFilesLoaded} />

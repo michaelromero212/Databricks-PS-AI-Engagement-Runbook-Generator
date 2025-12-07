@@ -16,6 +16,17 @@ This application automates the creation of Professional Services engagement runb
 - **Real-Time Processing**: Live pipeline status tracking with visual feedback
 - **Community Edition Ready**: Fully functional on Databricks free tier with DBFS bypass architecture
 
+### 🆕 Recent Improvements (December 2024)
+
+| Feature | Description |
+|---------|-------------|
+| **Custom File Upload** | Upload your own `.md`, `.txt`, `.json`, `.csv`, `.docx` files directly |
+| **Enhanced Error Handling** | Accessible error banners replace browser alerts |
+| **MLflow Tracking** | Experiment tracking with parameters, metrics, and tags logged per run |
+| **Data Quality Validation** | Bronze layer validates content length, size limits, and binary detection |
+| **Professional Runbook Format** | Enhanced output with metadata tables, risk matrices, and project phases |
+| **Environment Configuration** | Configurable API endpoints via `VITE_API_BASE` environment variable |
+
 ---
 
 ## 🏆 Why This Matters for Databricks Professional Services
