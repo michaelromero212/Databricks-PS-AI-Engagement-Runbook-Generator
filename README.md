@@ -16,7 +16,7 @@ This application automates the creation of Professional Services engagement runb
 - **Real-Time Processing**: Live pipeline status tracking with visual feedback
 - **Community Edition Ready**: Fully functional on Databricks free tier with DBFS bypass architecture
 
-### 🆕 Recent Improvements (December 2024)
+### 🆕 Recent Improvements (December 2025)
 
 | Feature | Description |
 |---------|-------------|
